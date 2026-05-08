@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Live ISS Tracker Dashboard with space news, charts, and AI chatbot">
+  <title>Space Dashboard — Live ISS Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-animation"></div>
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🛰️</div>
+      <h1>Space Dashboard <span>· Live Tracker</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+      <div class="clock" id="clock">--:--:--</div>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- STATS BAR -->
+    <section class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon purple">📍</div>
+        <div class="stat-info">
+          <span class="stat-label">ISS Latitude</span>
+          <span class="stat-value" id="stat-lat">--</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">⚡</div>
+        <div class="stat-info">
+          <span class="stat-label">Speed</span>
+          <span class="stat-value" id="stat-speed">--</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">👨‍🚀</div>
+        <div class="stat-info">
+          <span class="stat-label">People in Space</span>
+          <span class="stat-value" id="stat-astro">--</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">📰</div>
+        <div class="stat-info">
+          <span class="stat-label">News Articles</span>
+          <span class="stat-value" id="stat-news">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD GRID -->
+    <section class="dashboard-grid">
+
+      <!-- MAP -->
+      <div class="card map-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon purple">🌍</span> ISS Live Position
+          </div>
+          <button class="btn" onclick="refreshISS()">🔄 Refresh</button>
+        </div>
+        <div id="iss-map"></div>
+        <div class="map-info-bar">
+          <div class="map-info-item">
+            <span class="label">Latitude</span>
+            <span class="value" id="iss-lat">--</span>
+          </div>
+          <div class="map-info-item">
+            <span class="label">Longitude</span>
+            <span class="value" id="iss-lng">--</span>
+          </div>
+          <div class="map-info-item">
+            <span class="label">Speed</span>
+            <span class="value" id="iss-speed">--</span>
+          </div>
+          <div class="map-info-item">
+            <span class="label">Nearest Place</span>
+            <span class="value" id="iss-location">Calculating...</span>
+          </div>
+          <div class="map-info-item">
+            <span class="label">Positions Tracked</span>
+            <span class="value" id="iss-positions">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PEOPLE IN SPACE -->
+      <div class="card people-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon green">👨‍🚀</span> People in Space
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="astronaut-list" id="astronaut-list">
+            <div class="skeleton" style="height:48px;"></div>
+            <div class="skeleton" style="height:48px;"></div>
+            <div class="skeleton" style="height:48px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-section">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon green">📈</span> ISS Speed Over Time</div>
+          </div>
+          <div class="chart-container">
+            <canvas id="speed-chart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon orange">🍩</span> News Distribution</div>
+          </div>
+          <div class="chart-container">
+            <canvas id="news-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEWS (Enhanced) -->
+      <div class="card news-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="icon blue">📰</span> Latest News
+          </div>
+          <span class="news-cache-badge" id="news-cache-badge"></span>
+        </div>
+        <div class="news-toolbar">
+          <input type="text" class="news-search" id="news-search" placeholder="🔍 Search articles by title, source, or keyword...">
+          <select class="news-sort" id="news-sort" onchange="sortNews()">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="source-asc">Source A–Z</option>
+            <option value="source-desc">Source Z–A</option>
+          </select>
+        </div>
+        <div class="news-categories">
+          <button class="news-cat-tab active" data-category="technology" onclick="switchCategory('technology')">
+            💻 Technology
+            <button class="news-cat-refresh" onclick="event.stopPropagation(); refreshCategory('technology')" title="Refresh">🔄</button>
+          </button>
+          <button class="news-cat-tab" data-category="science" onclick="switchCategory('science')">
+            🔬 Science
+            <button class="news-cat-refresh" onclick="event.stopPropagation(); refreshCategory('science')" title="Refresh">🔄</button>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="news-grid" id="news-grid">
+            <div class="news-loading" id="news-loading">
+              <div class="news-spinner"></div>
+              <span style="color:var(--text-muted);font-size:0.85rem;">Loading articles...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- FLOATING CHATBOT -->
+  <button class="chat-fab" id="chat-fab" onclick="toggleChatWindow()">💬</button>
+  <div class="chat-window" id="chat-window">
+    <div class="chat-win-header">
+      <h3>🤖 AI Assistant</h3>
+      <div class="chat-win-actions">
+        <button onclick="clearChat()" title="Clear Chat">🗑️</button>
+        <button onclick="toggleChatWindow()" title="Close">✕</button>
+      </div>
+    </div>
+    <div class="chat-win-messages" id="chat-messages"></div>
+    <div class="chat-win-input">
+      <input type="text" id="chat-input" placeholder="Ask about ISS, news..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
